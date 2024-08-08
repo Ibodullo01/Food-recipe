@@ -49,15 +49,6 @@ class RecipeDeleteAPIView(DestroyAPIView):
         return Response({'message': 'Recipe deleted successfully .'})
 
 
-class RecipeListAPIView(ListAPIView):
-    queryset = Recipe.objects.all()
-    serializer_class = RecipeListSerializer
-    permission_classes = [AllowAny]
-    filter_backends = (OrderingFilter, DjangoFilterBackend)
-    filterset_class = RecipeFilter
-    ordering_fields = ['created_at']
-
-
 class RecipeListForUserAPIView(ListAPIView):
     queryset = Recipe.objects.all()
     serializer_class = RecipeListSerializer
@@ -74,18 +65,6 @@ class RecipeListForUserAPIView(ListAPIView):
 class CategoryListAPIView(ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategoryListSerializer
-
-
-class RateRecipeAPIView(CreateAPIView):
-    serializer_class = RateRecipeSerializer
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, pk):
-        recipe = get_object_or_404(Recipe, pk=pk)
-        if not recipe:
-            return Response({"error": "Recipe does not exist."}, status=status.HTTP_400_BAD_REQUEST)
-        RateRecipe.objects.create(recipe=recipe, user=request.user, rate=request.data['rate'])
-        return Response({"success": "Rated Recipe successfully."}, status=status.HTTP_200_OK)
 
 
 class CommentCreateAPIView(CreateAPIView):
@@ -115,17 +94,6 @@ class CommentDeleteAPIView(DestroyAPIView):
         return Response(f"{comment.user} deleted successfully.", status=status.HTTP_200_OK)
 
 
-class RecipeListForUserAPIView(ListAPIView):
-    queryset = Recipe.objects.all()
-    serializer_class = RecipeListSerializer
-    permission_classes = [IsOwner]
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        qs = qs.filter(user=self.request.user)
-        return qs
-
-
 class RateRecipeAPIView(CreateAPIView):
     serializer_class = RateRecipeSerializer
     permission_classes = [IsAuthenticated]
@@ -139,12 +107,12 @@ class RateRecipeAPIView(CreateAPIView):
 
 
 class LikeCommentAPIView(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
         data = CommentLikeSerializer(request.data).__getitem__('liked').value
         commit = get_object_or_404(Comment, pk=pk)
-        like_comment, created = CommentLike.objects.get_or_create(comment=commit, user=1)
+        like_comment, created = CommentLike.objects.get_or_create(comment=commit, user=request.user)
         if data == 1:
             if like_comment.liked is True and like_comment.disliked is False:
                 like_comment.liked = False
@@ -168,6 +136,15 @@ class LikeCommentAPIView(APIView):
             serializer = LikeSerializer(like_comment)
             return Response(data=serializer.data, status=status.HTTP_200_OK)
         return Response(f"{like_comment.user} Not Liked.", status=status.HTTP_400_BAD_REQUEST)
+
+
+class RecipeListAPIView(ListAPIView):
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeListSerializer
+    permission_classes = [AllowAny]
+    filter_backends = (OrderingFilter, DjangoFilterBackend)
+    filterset_class = RecipeFilter
+    ordering_fields = ['created_at']
 
 
 class SavedRecipeAPIView(CreateAPIView):
