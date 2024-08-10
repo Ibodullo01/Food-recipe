@@ -17,4 +17,5 @@ urlpatterns = [
     path('following/', following_create, name='following_create'),
     path('followers_list/', followers_list, name='followers'),
     path('following_list/', following_list, name='followings')
+
 ]

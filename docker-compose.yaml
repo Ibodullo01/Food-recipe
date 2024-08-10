@@ -1,0 +1,17 @@
+version: '3.11'
+
+services:
+  web:
+    build: .
+    container_name: web
+    command: >
+      sh -c   "python manage.py makemigrations && 
+              python manage.py migrate && 
+              python manage.py runserver 127.0.0.1:8000"
+    ports:
+      - 8000:8000
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+
