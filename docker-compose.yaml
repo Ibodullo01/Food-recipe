@@ -1,17 +1,71 @@
-version: '3.11'
+version: '3'
 
 services:
-  web:
+  food_recipe:
     build: .
-    container_name: web
-    command: >
-      sh -c   "python manage.py makemigrations && 
-              python manage.py migrate && 
-              python manage.py runserver 127.0.0.1:8000"
+    container_name: recipe
+    command: python manage.py runserver 0.0.0.0:8000
     ports:
       - 8000:8000
     depends_on:
+      - db
       - redis
     restart: unless-stopped
+    environment:
+      DB_NAME: food_recipe_db
+      DB_USER: ibodullo
+      DB_PASS: qwer1234#
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+  db:
+    image: postgres:15-alpine
+    container_name: db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: food_recipe_db
+      POSTGRES_USER: ibodullo
+      POSTGRES_PASSWORD: qwer1234#
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: unless-stopped
+
+  celery:
+    build: .
+    command: celery -A project.celery worker -l INFO
+    restart: unless-stopped
+    depends_on:
+      - food_recipe
+      - redis
+    environment:
+      DB_NAME: food_recipe_db
+      DB_USER: ibodullo
+      DB_PASS: qwer1234#
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
 
 
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - static_data:/app/static
+      - media_data:/app/media
+    ports:
+      - 80:80
+    depends_on:
+      - web
+
+volumes:
+  pgdata:
+  static_data:
+  media_data:
