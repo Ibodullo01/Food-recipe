@@ -6,7 +6,7 @@ services:
     container_name: recipe
     command: python manage.py runserver 0.0.0.0:8000
     ports:
-      - 8000:8000
+      - "8001:8000"
     depends_on:
       - db
       - redis
@@ -38,12 +38,13 @@ services:
 
   celery:
     build: .
-    command: celery -A project.celery worker -l INFO
+    command: celery -A food_recipe worker -l INFO
     restart: unless-stopped
     depends_on:
       - food_recipe
       - redis
     environment:
+      DJANGO_SETTINGS_MODULE: food_recipe.settings
       DB_NAME: food_recipe_db
       DB_USER: ibodullo
       DB_PASS: qwer1234#
@@ -61,9 +62,9 @@ services:
       - static_data:/app/static
       - media_data:/app/media
     ports:
-      - 80:80
+      - "8080:80"
     depends_on:
-      - web
+      - food_recipe
 
 volumes:
   pgdata:
