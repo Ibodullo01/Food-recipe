@@ -10,6 +10,7 @@ services:
     depends_on:
       - db
       - redis
+      - rabbitmq  # RabbitMQ'ga bog'liq
     restart: unless-stopped
     environment:
       DB_NAME: food_recipe_db
@@ -19,6 +20,8 @@ services:
       DB_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq  # RabbitMQ'ga bog'liq
+      RABBITMQ_PORT: 5672       # RabbitMQ'ga bog'liq
 
   db:
     image: postgres:15-alpine
@@ -38,11 +41,13 @@ services:
 
   celery:
     build: .
+    container_name: celery
     command: celery -A food_recipe worker -l INFO
     restart: unless-stopped
     depends_on:
       - food_recipe
       - redis
+      - rabbitmq  # RabbitMQ'ga bog'liq
     environment:
       DJANGO_SETTINGS_MODULE: food_recipe.settings
       DB_NAME: food_recipe_db
@@ -52,7 +57,9 @@ services:
       DB_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
-
+      RABBITMQ_HOST: rabbitmq  # RabbitMQ'ga bog'liq
+      RABBITMQ_PORT: 5672       # RabbitMQ'ga bog'liq
+      CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//  # Celery broker URL
 
   nginx:
     image: nginx:alpine
@@ -65,6 +72,17 @@ services:
       - "8080:80"
     depends_on:
       - food_recipe
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5673:5672"   # Tashqi port 5673, ichki port 5672
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    restart: unless-stopped
 
 volumes:
   pgdata:
